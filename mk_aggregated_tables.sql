@@ -14,6 +14,16 @@ WITH RECURSIVE dates(x) AS (
     SELECT x as month
     FROM dates;
 
+-- Simplified zipcode/city/region table with only one row per zipcode
+-- Selects a random region in zipcodes spanning several regions
+CREATE VIEW dataviz_zipcoderegion AS
+    SELECT zipcode,
+           city,
+           region
+      FROM members_zipcoderegion
+     GROUP BY zipcode,
+              city;
+
 -- Child members, with as much information about each kid as possible
 CREATE TABLE dataviz_members AS
     SELECT p.id,
@@ -32,9 +42,10 @@ CREATE TABLE dataviz_members AS
            d.longtitude AS chapter_longitude,
            u.id AS union_id,
            u.name AS union_name,
-           MAX(a.end_date) AS end_date
+           MAX(a.end_date) AS last_activity,
+           COUNT(DISTINCT a.id) AS num_activities
       FROM members_person AS p
-           JOIN members_zipcoderegion AS zr ON zr.zipcode = p.zipcode
+           JOIN dataviz_zipcoderegion AS zr ON zr.zipcode = p.zipcode
            -- JOIN members_payment AS pay ON pay.person_id = p.id
            JOIN members_member AS m ON m.person_id = p.id
            JOIN members_department AS d ON d.id = m.department_id
@@ -45,7 +56,7 @@ CREATE TABLE dataviz_members AS
      -- AND pay.refunded_dtm IS NULL
      -- AND pay.added > date('now', 'start of year')
      GROUP BY p.id, d.id;
-
+;
 -- Aggregate number of kids of similar age/gender/city/department on a monthly basis
 CREATE TABLE dataviz_members_grouped AS
     SELECT COUNT(id) AS antal,
@@ -57,15 +68,18 @@ CREATE TABLE dataviz_members_grouped AS
            chapter_name,
            chapter_latitude,
            chapter_longitude,
-           union_name
+           union_name,
+           num_activities
       FROM dataviz_members
            LEFT JOIN dataviz_months_with_activity
-     WHERE (member_since < month AND ( (end_date IS NULL) OR end_date > month) )
+     WHERE (member_since < month AND ( (last_activity IS NULL) OR last_activity > month) )
      GROUP BY chapter_name,
               gender,
               month,
               age,
-              city;
+              city,
+              num_activities
+              ;
   -- ORDER BY month, age;
 
 
@@ -85,7 +99,7 @@ CREATE TABLE dataviz_waitinglist AS
            u.id AS union_id,
            u.name AS union_name
       FROM members_person AS p
-           JOIN members_zipcoderegion AS zr ON zr.zipcode = p.zipcode
+           JOIN dataviz_zipcoderegion AS zr ON zr.zipcode = p.zipcode
            JOIN members_waitinglist AS w ON w.person_id = p.id
            JOIN members_department AS d ON d.id = w.department_id
            JOIN members_union AS u ON u.id = d.union_id
