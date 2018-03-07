@@ -1,7 +1,4 @@
 -- TODO
---   - Currently we just create views (because it is easier). To avoid
---     double computation these should be manifested as actual
---     tables. Should be done before making this widely available.
 --   - Create table of parents of current members (including number of kids and "is volunteer" flag)
 --   - Create table of volunteers (but are non-active volunteers ever removed?)
 
@@ -18,7 +15,7 @@ WITH RECURSIVE dates(x) AS (
     FROM dates;
 
 -- Child members, with as much information about each kid as possible
-CREATE VIEW dataviz_members AS
+CREATE TABLE dataviz_members AS
     SELECT p.id,
            p.birthday,
            p.gender,
@@ -50,7 +47,7 @@ CREATE VIEW dataviz_members AS
      GROUP BY p.id, d.id;
 
 -- Aggregate number of kids of similar age/gender/city/department on a monthly basis
-CREATE VIEW dataviz_members_grouped AS
+CREATE TABLE dataviz_members_grouped AS
     SELECT COUNT(id) AS antal,
            month as timeperiod,
            CAST ( ( (julianday(month) - julianday(birthday) ) / 365.25) AS INT) AS age,
@@ -72,7 +69,7 @@ CREATE VIEW dataviz_members_grouped AS
   -- ORDER BY month, age;
 
 
-CREATE VIEW dataviz_waitinglist AS
+CREATE TABLE dataviz_waitinglist AS
     SELECT p.id,
            p.birthday,
            p.gender,
