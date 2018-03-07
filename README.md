@@ -37,8 +37,18 @@ Currently the data in this screenshot is randomly generated:
        
 4. Tilføj database-tabeller i superset
     - Tilgå "Sources -> Tables" go tryk på "+"-knappen øverst til højre
-    - Vælg den netop uploadede database og indtast tabelnavnet:
-      ```dataviz_members_grouped```.
+    - Vælg den netop uploadede database og indtast tabelnavnet: ```dataviz_members_grouped```.
+
+5. Rediger kolonne-indstillinger. Superset kan af ukendte årsager ikke
+   inferrere datatyperne for nogle af kolonnerne. Ret derfor tabellen
+   der lige er tilføjet og lav følgende rettelser:
+     - ret "antal" til at være type INT og kryds af i "Sum".
+     - ret "timeperiod" til atvære type "DATE" og kryds af i "Groupable" og "Is temporal"
+     - sæt kryds i "Groupable" ud for "age", "gender", "city", "region", "chapter_name" og "union_name"
+     - sæt kryds i "Filterable" ud for "gender", "city", "region", "chapter_name" og "union_name"
+     - sæt kryds i "Count Distinct" ud for "chapter_name" og "union_name"
+     
+   Gå tilbage til Detail siden og tryk Save.
 
 5. Importer dashboard via menuen "Manage -> Import Dashboards" og
    upload filen ```cp-member-dashboard.pickle```
