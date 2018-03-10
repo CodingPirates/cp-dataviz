@@ -26,7 +26,8 @@ CREATE VIEW dataviz_zipcoderegion AS
 
 -- Child members, with as much information about each kid as possible
 CREATE TABLE dataviz_members AS
-    SELECT p.id,
+    SELECT p.id as person_id,
+           m.id as member_id,
            p.birthday,
            p.gender,
            p.zipcode,
@@ -42,8 +43,7 @@ CREATE TABLE dataviz_members AS
            d.longtitude AS chapter_longitude,
            u.id AS union_id,
            u.name AS union_name,
-           MAX(a.end_date) AS last_activity,
-           COUNT(DISTINCT a.id) AS num_activities
+           MAX(a.end_date) AS last_activity
       FROM members_person AS p
            JOIN dataviz_zipcoderegion AS zr ON zr.zipcode = p.zipcode
            -- JOIN members_payment AS pay ON pay.person_id = p.id
@@ -57,27 +57,44 @@ CREATE TABLE dataviz_members AS
      -- AND pay.added > date('now', 'start of year')
      GROUP BY p.id, d.id;
 ;
+
+CREATE TABLE dataviz_members_num_activities AS
+   SELECT person_id,
+          month AS timeperiod,
+          SUM (julianday(a.end_date) - julianday(a.start_date) <= 5) as num_events,
+          SUM (julianday(a.end_date) - julianday(a.start_date) > 5) as num_seasons,
+          COUNT(a.id) as num_activities
+     FROM dataviz_members AS m
+          JOIN dataviz_months_with_activity
+          LEFT JOIN members_activityparticipant AS ap ON ap.member_id = m.member_id
+          LEFT JOIN members_activity AS a ON a.id = ap.activity_id
+     WHERE
+          a.start_date < month
+     GROUP BY person_id, month;
+
 -- Aggregate number of kids of similar age/gender/city/department on a monthly basis
 CREATE TABLE dataviz_members_grouped AS
-    SELECT COUNT(id) AS antal,
-           month as timeperiod,
-           CAST ( ( (julianday(month) - julianday(birthday) ) / 365.25) AS INT) AS age,
-           city,
-           region,
-           gender,
-           chapter_name,
-           chapter_latitude,
-           chapter_longitude,
-           union_name,
-           num_activities
-      FROM dataviz_members
+    SELECT COUNT(m.person_id) AS antal,
+           month AS timeperiod,
+           CAST ( ( (julianday(month) - julianday(m.birthday) ) / 365.25) AS INT) AS age,
+           m.city,
+           m.region,
+           m.gender,
+           m.chapter_name,
+           m.chapter_latitude,
+           m.chapter_longitude,
+           m.union_name,
+           IFNULL(na.num_activities, 0) as num_activities
+      FROM dataviz_members as m
            LEFT JOIN dataviz_months_with_activity
+           LEFT JOIN dataviz_members_num_activities AS na ON (na.person_id = m.person_id AND
+                                                         na.timeperiod = month)
      WHERE (member_since < month AND ( (last_activity IS NULL) OR last_activity > month) )
-     GROUP BY chapter_name,
-              gender,
+     GROUP BY m.chapter_name,
+              m.gender,
               month,
               age,
-              city,
+              m.city,
               num_activities
               ;
   -- ORDER BY month, age;
